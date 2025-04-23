@@ -2,23 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Toggle-able Infinite Scroll Demo</title>
+  <title>Toggle-able Infinite Scroll Demo (Large Banner)</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-    /* ── Fixed header with stats & toggle ─────────────────────────────── */
+    /* ── Bigger banner ──────────────────────────────────────────────── */
     #header{
       position:fixed;top:0;left:0;width:100%;z-index:10;
-      padding:0.7rem 1rem;display:flex;gap:2rem;align-items:center;flex-wrap:wrap;
-      font:600 16px/1.4 system-ui,sans-serif;background:#111;color:#fff;
-      box-shadow:0 2px 4px rgba(0,0,0,.3)
+
+      /* ↑-- adjust these three lines for header size/spacing */
+      padding:1.4rem 2rem;        /* more vertical & horizontal space */
+      font:700 20px/1.4 system-ui,sans-serif;  /* larger text */
+      /* ─────────────────────────────────────────────────────────────── */
+
+      display:flex;gap:3rem;align-items:center;flex-wrap:wrap;
+      background:#111;color:#fff;
+      box-shadow:0 3px 6px rgba(0,0,0,.35);
     }
     #header span{font-weight:400}
 
-    /* simple toggle styling */
-    #toggleInfinite{accent-color:#00b6ff;transform:scale(1.15);margin-right:.3rem}
+    /* toggle checkbox a bit larger */
+    #toggleInfinite{accent-color:#00b6ff;transform:scale(1.35);margin-right:.4rem}
 
-    #blockContainer{margin-top:3rem;padding:1rem;display:flex;flex-wrap:wrap;gap:.6rem}
+    #blockContainer{
+      margin-top:5.2rem;          /* push content below bigger header */
+      padding:1rem;display:flex;flex-wrap:wrap;gap:.6rem;
+    }
     .hBlock{
       width:120px;height:120px;display:inline-flex;align-items:center;justify-content:center;
       font:500 14px/1.2 system-ui,sans-serif;color:#333;background:#eaeaea;border-radius:8px;
@@ -31,23 +40,23 @@
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "r8sgofx20x");
-  </script>
+  </script>  
 </head>
 <body>
   <div id="header">
     <div>Max Height: <span id="maxHeight">--</span> px</div>
     <div>Current Scroll: <span id="curScroll">--</span> px</div>
-    <label><input type="checkbox" id="toggleInfinite" checked>Infinite Block Render</label>
+    <label><input type="checkbox" id="toggleInfinite" checked>Infinite scroll</label>
   </div>
 
   <div id="blockContainer"></div>
 
   <script>
-    /* ── Config ───────────────────────────────────────────────────────── */
+    /* ── Config ─────────────────────────────────────────────────────── */
     const INITIAL_BLOCKS = 400;
     const BATCH_SIZE     = 200;
     const THRESHOLD_PX   = 500;
-    /* ─────────────────────────────────────────────────────────────────── */
+    /* ───────────────────────────────────────────────────────────────── */
 
     const container  = document.getElementById('blockContainer');
     const maxOut     = document.getElementById('maxHeight');
@@ -56,9 +65,8 @@
 
     let nextBlockNum   = 1;
     let loading        = false;
-    let infiniteActive = toggle.checked;          // initial state from checkbox
+    let infiniteActive = toggle.checked;
 
-    /* generate blocks */
     function addBlocks(count){
       loading = true;
       const frag = document.createDocumentFragment();
@@ -73,16 +81,14 @@
       loading = false;
     }
 
-    /* live stats */
     function updateStats(){
       maxOut.textContent = document.documentElement.scrollHeight.toLocaleString();
       curOut.textContent = Math.round(window.scrollY).toLocaleString();
     }
 
-    /* scroll handler */
     function handleScroll(){
       updateStats();
-      if(!infiniteActive) return;                // toggled off → do nothing
+      if(!infiniteActive) return;
       const bottomDist = document.documentElement.scrollHeight -
                          (window.scrollY + window.innerHeight);
       if(bottomDist < THRESHOLD_PX && !loading){
@@ -90,10 +96,8 @@
       }
     }
 
-    /* toggle listener */
     toggle.addEventListener('change', ()=>{ infiniteActive = toggle.checked; });
 
-    /* init */
     window.addEventListener('load',   ()=>{ addBlocks(INITIAL_BLOCKS); });
     window.addEventListener('resize', updateStats);
     window.addEventListener('scroll', handleScroll);
