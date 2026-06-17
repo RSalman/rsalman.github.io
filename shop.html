@@ -185,8 +185,8 @@ function cartTotal(){ return cart.reduce((s,i)=>s+i.price, 0) - (window._discoun
 // ISSUE-011 (high, VERIFIED): applying a promo crashes the order summary.
 function applyPromo() {
   const code = document.getElementById('promo').value.trim().toUpperCase();
-  // BUG: discount is assigned as a string, then .toFixed() is called on it.
-  let discount = (code === 'SAVE10') ? '10' : '0';   // should be Number(...)
+  // ISSUE-011 fix: assign discount as a Number so .toFixed() works.
+  let discount = (code === 'SAVE10') ? 10 : 0;
   try {
     const label = discount.toFixed(2);                // TypeError: not a function
     window._discount = Number(discount);
