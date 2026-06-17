@@ -204,9 +204,18 @@ function completeCheckout() {
   const errEl = document.getElementById('checkoutErr');
   errEl.textContent = '';
   try {
-    // BUG: paymentForm is never initialised; calling .submit() throws.
-    const paymentForm = window.paymentForm;     // undefined
-    paymentForm.submit();                       // TypeError -> checkout blocked
+    // ISSUE-010 fix: there is no payment <form> in this demo storefront, so the
+    // old window.paymentForm.submit() always threw. Complete checkout client-side.
+    if (!cart.length) {
+      errEl.textContent = 'Your cart is empty.';
+      return;
+    }
+    const total = cartTotal();
+    cart.length = 0;
+    window._discount = 0;
+    drawCart();
+    document.getElementById('cartBadge').textContent = cart.length;
+    errEl.textContent = 'Order placed! Total charged: $' + total.toFixed(2) + ' (demo — no real payment processed).';
   } catch (e) {
     console.error('[ISSUE-010] checkout failed, user blocked:', e.message);
     errEl.textContent = 'Checkout could not be completed. Please try again later.';
