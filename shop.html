@@ -156,7 +156,7 @@ searchEl.addEventListener('input', () => {
   if (!q) { suggestEl.style.display = 'none'; return; }
   const matches = PRODUCTS.filter(p => p.name.toLowerCase().includes(q));
   // BUG: when there are no matches the code passes null to .map and throws.
-  const data = matches.length ? matches : null;
+  const data = matches.length ? matches : [];
   try {
     suggestEl.innerHTML = data
       .map(p => `<div onclick="pick('${p.name}')">${p.name}</div>`).join('');
