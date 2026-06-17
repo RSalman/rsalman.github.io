@@ -155,12 +155,13 @@ searchEl.addEventListener('input', () => {
   const q = searchEl.value.trim().toLowerCase();
   if (!q) { suggestEl.style.display = 'none'; return; }
   const matches = PRODUCTS.filter(p => p.name.toLowerCase().includes(q));
-  // BUG: when there are no matches the code passes null to .map and throws.
-  const data = matches.length ? matches : null;
+  // FIX (ISSUE-009): use the empty array (matches is already [] when there are
+  // no results) so .map is always safe and never called on null.
+  const data = matches;
   try {
     suggestEl.innerHTML = data
       .map(p => `<div onclick="pick('${p.name}')">${p.name}</div>`).join('');
-    suggestEl.style.display = 'block';
+    suggestEl.style.display = data.length ? 'block' : 'none';
   } catch (e) {
     console.error('[ISSUE-009] autocomplete TypeError:', e.message);
     suggestEl.style.display = 'none';
