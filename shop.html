@@ -128,9 +128,9 @@ function render() {
 // The handler updates a stale reference, so the displayed price never changes.
 function onVariantChange(id) {
   const p = PRODUCTS.find(x => x.id === id);
-  // BUG: reads from p.price (the base) instead of the selected variant price.
-  document.getElementById('price-' + id).textContent = '$' + p.price.toFixed(2);
-  console.warn('[ISSUE-008] variant changed but price not recalculated for product', id);
+  const selected = document.getElementById('variant-' + id).value;
+  const price = p.variants && selected in p.variants ? p.variants[selected] : p.price;
+  document.getElementById('price-' + id).textContent = '$' + price.toFixed(2);
 }
 
 // ISSUE-007 (high, unverified): Add to Cart is intermittently unresponsive.
