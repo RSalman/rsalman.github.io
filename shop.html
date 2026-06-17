@@ -133,15 +133,8 @@ function onVariantChange(id) {
   console.warn('[ISSUE-008] variant changed but price not recalculated for product', id);
 }
 
-// ISSUE-007 (high, unverified): Add to Cart is intermittently unresponsive.
-let _clicks = 0;
+// ISSUE-007: Add to Cart is intermittently unresponsive.
 function addToCart(id) {
-  _clicks++;
-  // BUG: every 3rd click silently no-ops (race with a debounce flag).
-  if (_clicks % 3 === 0) {
-    console.error('[ISSUE-007] addToCart no-op (intermittent unresponsiveness)');
-    return;
-  }
   const p = PRODUCTS.find(x => x.id === id);
   const variant = document.getElementById('variant-' + id).value;
   cart.push({ name: p.name, variant, price: p.variants[variant] });
