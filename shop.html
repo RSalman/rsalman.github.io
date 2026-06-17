@@ -69,15 +69,17 @@
 
 <div class="drawer" id="drawer">
   <h2>Your Cart</h2>
-  <div id="cartLines"></div>
-  <div class="promo">
-    <input id="promo" placeholder="Promo code (try SAVE10)">
-    <button onclick="applyPromo()">Apply</button>
-  </div>
-  <div class="line total"><span>Total</span><span id="total">$0.00</span></div>
-  <button class="checkout" onclick="completeCheckout()">Complete Checkout</button>
-  <div class="err" id="checkoutErr"></div>
-  <p class="note">Demo storefront — no real payments are processed.</p>
+  <form id="paymentForm" onsubmit="return false">
+    <div id="cartLines"></div>
+    <div class="promo">
+      <input id="promo" placeholder="Promo code (try SAVE10)">
+      <button type="button" onclick="applyPromo()">Apply</button>
+    </div>
+    <div class="line total"><span>Total</span><span id="total">$0.00</span></div>
+    <button type="button" class="checkout" onclick="completeCheckout()">Complete Checkout</button>
+    <div class="err" id="checkoutErr"></div>
+    <p class="note">Demo storefront — no real payments are processed.</p>
+  </form>
 </div>
 
 <script>
@@ -204,9 +206,12 @@ function completeCheckout() {
   const errEl = document.getElementById('checkoutErr');
   errEl.textContent = '';
   try {
-    // BUG: paymentForm is never initialised; calling .submit() throws.
-    const paymentForm = window.paymentForm;     // undefined
-    paymentForm.submit();                       // TypeError -> checkout blocked
+    // FIX (ISSUE-010): reference the real checkout form in the DOM instead of
+    // the never-initialised window.paymentForm, so submitting no longer throws.
+    // Use requestSubmit() so the form's onsubmit="return false" guard runs and
+    // the demo checkout completes in-page without an unintended reload.
+    const paymentForm = document.getElementById('paymentForm');
+    paymentForm.requestSubmit();
   } catch (e) {
     console.error('[ISSUE-010] checkout failed, user blocked:', e.message);
     errEl.textContent = 'Checkout could not be completed. Please try again later.';
