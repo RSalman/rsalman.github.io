@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Acme Shop</title>
+<link rel="icon" href="/favicon.ico"><!-- ISSUE-006: 404, cosmetic -->
+<style>
+  :root { --ink:#1d2433; --muted:#6b7280; --line:#e5e7eb; --brand:#4f46e5; --bg:#f7f8fc; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+         color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+  .bar { max-width:1080px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; }
+  .logo { font-weight:800; font-size:20px; letter-spacing:-.5px; }
+  .logo span { color:var(--brand); }
+  .search { flex:1; position:relative; }
+  .search input { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font-size:14px; }
+  .suggest { position:absolute; top:44px; left:0; right:0; background:#fff; border:1px solid var(--line);
+             border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.08); overflow:hidden; }
+  .suggest div { padding:10px 12px; cursor:pointer; font-size:14px; }
+  .suggest div:hover { background:var(--bg); }
+  .cart-btn { position:relative; background:var(--brand); color:#fff; border:0; padding:10px 16px;
+              border-radius:10px; font-weight:600; cursor:pointer; }
+  .badge { position:absolute; top:-8px; right:-8px; background:#ef4444; color:#fff; border-radius:999px;
+           min-width:20px; height:20px; font-size:12px; display:grid; place-items:center; padding:0 5px; }
+  main { max-width:1080px; margin:0 auto; padding:24px 20px 80px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+  .thumb { height:150px; display:grid; place-items:center; font-size:46px; }
+  .card .body { padding:14px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .card h3 { margin:0; font-size:15px; }
+  .price { font-weight:700; font-size:16px; }
+  select { padding:7px; border:1px solid var(--line); border-radius:8px; font-size:13px; }
+  .add { margin-top:auto; background:#111827; color:#fff; border:0; padding:9px; border-radius:9px; cursor:pointer; font-weight:600; }
+  /* checkout drawer */
+  .drawer { position:fixed; top:0; right:0; height:100%; width:360px; background:#fff;
+            border-left:1px solid var(--line); transform:translateX(100%); transition:.25s; padding:20px; overflow:auto; }
+  .drawer.open { transform:translateX(0); box-shadow:-12px 0 40px rgba(0,0,0,.12); }
+  .drawer h2 { margin-top:0; }
+  .line { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .promo { display:flex; gap:8px; margin:14px 0; }
+  .promo input { flex:1; padding:9px; border:1px solid var(--line); border-radius:8px; }
+  .promo button { padding:9px 12px; border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; }
+  .checkout { width:100%; background:var(--brand); color:#fff; border:0; padding:13px; border-radius:10px;
+              font-weight:700; font-size:15px; cursor:pointer; margin-top:14px; }
+  .total { font-size:18px; font-weight:800; }
+  .note { font-size:12px; color:var(--muted); }
+  .err { color:#b91c1c; font-size:13px; min-height:18px; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">Acme<span>Shop</span></div>
+    <div class="search">
+      <input id="search" placeholder="Search products…" autocomplete="off">
+      <div id="suggest" class="suggest" style="display:none"></div>
+    </div>
+    <button class="cart-btn" onclick="openCart()">Cart
+      <span class="badge" id="cartBadge">0</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <h1>New Arrivals</h1>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="drawer" id="drawer">
+  <h2>Your Cart</h2>
+  <div id="cartLines"></div>
+  <div class="promo">
+    <input id="promo" placeholder="Promo code (try SAVE10)">
+    <button onclick="applyPromo()">Apply</button>
+  </div>
+  <div class="line total"><span>Total</span><span id="total">$0.00</span></div>
+  <button class="checkout" onclick="completeCheckout()">Complete Checkout</button>
+  <div class="err" id="checkoutErr"></div>
+  <p class="note">Demo storefront — no real payments are processed.</p>
+</div>
+
+<script>
+/* =========================================================================
+   This storefront intentionally reproduces the OPEN frontend errors that
+   appear in the issue console. Open DevTools → Console to see them fire.
+   Each error is tagged with its ISSUE-### id.
+   ========================================================================= */
+
+// ISSUE-005 (low): analytics beacon hits a retired endpoint -> 404, fails silently
+fetch('/track/pageview?p=shop').catch(() => {});
+
+// ISSUE-004 (low): noisy deprecation warning, no user impact
+console.warn('[ISSUE-004] jQuery.fn.bind() is deprecated. Use .on() instead.');
+
+const PRODUCTS = [
+  { id:1, name:'Canvas Sneakers',  emoji:'👟', price:64,  variants:{'7':64,'8':64,'9':69,'10':69} },
+  { id:2, name:'Wool Beanie',      emoji:'🧢', price:24,  variants:{'S':24,'M':24,'L':26} },
+  { id:3, name:'Leather Wallet',   emoji:'👛', price:48,  variants:{'Black':48,'Brown':52} },
+  { id:4, name:'Sport Watch',      emoji:'⌚', price:129, variants:{'Silver':129,'Gold':149} },
+  { id:5, name:'Sunglasses',       emoji:'🕶️', price:38,  variants:{'Matte':38,'Gloss':42} },
+  { id:6, name:'Backpack',         emoji:'🎒', price:79,  variants:{'15L':79,'25L':89} },
+];
+
+const cart = [];
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const opts = Object.keys(p.variants)
+      .map(v => `<option value="${v}">${v}</option>`).join('');
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <div class="thumb">${p.emoji}</div>
+      <div class="body">
+        <h3>${p.name}</h3>
+        <div class="price" id="price-${p.id}">$${p.price.toFixed(2)}</div>
+        <select id="variant-${p.id}" onchange="onVariantChange(${p.id})">${opts}</select>
+        <button class="add" onclick="addToCart(${p.id})">Add to Cart</button>
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+// ISSUE-008 (high, unverified): price fails to update when the variant changes.
+// The handler updates a stale reference, so the displayed price never changes.
+function onVariantChange(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  // BUG: reads from p.price (the base) instead of the selected variant price.
+  document.getElementById('price-' + id).textContent = '$' + p.price.toFixed(2);
+  console.warn('[ISSUE-008] variant changed but price not recalculated for product', id);
+}
+
+// ISSUE-007 (high, unverified): Add to Cart is intermittently unresponsive.
+let _clicks = 0;
+function addToCart(id) {
+  _clicks++;
+  // BUG: every 3rd click silently no-ops (race with a debounce flag).
+  if (_clicks % 3 === 0) {
+    console.error('[ISSUE-007] addToCart no-op (intermittent unresponsiveness)');
+    return;
+  }
+  const p = PRODUCTS.find(x => x.id === id);
+  const variant = document.getElementById('variant-' + id).value;
+  cart.push({ name: p.name, variant, price: p.variants[variant] });
+  document.getElementById('cartBadge').textContent = cart.length;
+}
+
+// ISSUE-009 (high, unverified): autocomplete throws when suggestions are null.
+const searchEl = document.getElementById('search');
+const suggestEl = document.getElementById('suggest');
+searchEl.addEventListener('input', () => {
+  const q = searchEl.value.trim().toLowerCase();
+  if (!q) { suggestEl.style.display = 'none'; return; }
+  const matches = PRODUCTS.filter(p => p.name.toLowerCase().includes(q));
+  // BUG: when there are no matches the code passes null to .map and throws.
+  const data = matches.length ? matches : null;
+  try {
+    suggestEl.innerHTML = data
+      .map(p => `<div onclick="pick('${p.name}')">${p.name}</div>`).join('');
+    suggestEl.style.display = 'block';
+  } catch (e) {
+    console.error('[ISSUE-009] autocomplete TypeError:', e.message);
+    suggestEl.style.display = 'none';
+  }
+});
+function pick(name){ searchEl.value = name; suggestEl.style.display='none'; }
+
+function openCart() { document.getElementById('drawer').classList.add('open'); drawCart(); }
+
+function drawCart() {
+  const lines = document.getElementById('cartLines');
+  if (!cart.length) { lines.innerHTML = '<p class="note">Cart is empty.</p>'; }
+  else {
+    lines.innerHTML = cart.map(i =>
+      `<div class="line"><span>${i.name} (${i.variant})</span><span>$${i.price.toFixed(2)}</span></div>`
+    ).join('');
+  }
+  document.getElementById('total').textContent = '$' + cartTotal().toFixed(2);
+}
+function cartTotal(){ return cart.reduce((s,i)=>s+i.price, 0) - (window._discount||0); }
+
+// ISSUE-011 (high, VERIFIED): applying a promo crashes the order summary.
+function applyPromo() {
+  const code = document.getElementById('promo').value.trim().toUpperCase();
+  // BUG: discount is assigned as a string, then .toFixed() is called on it.
+  let discount = (code === 'SAVE10') ? '10' : '0';   // should be Number(...)
+  try {
+    const label = discount.toFixed(2);                // TypeError: not a function
+    window._discount = Number(discount);
+    drawCart();
+    console.log('Promo applied:', label);
+  } catch (e) {
+    console.error('[ISSUE-011] promo crash:', e.message);
+    document.getElementById('checkoutErr').textContent =
+      'Something went wrong applying your code. Please try again.';
+  }
+}
+
+// ISSUE-010 (high, VERIFIED): checkout button throws -> user is BLOCKED.
+function completeCheckout() {
+  const errEl = document.getElementById('checkoutErr');
+  errEl.textContent = '';
+  try {
+    // BUG: paymentForm is never initialised; calling .submit() throws.
+    const paymentForm = window.paymentForm;     // undefined
+    paymentForm.submit();                       // TypeError -> checkout blocked
+  } catch (e) {
+    console.error('[ISSUE-010] checkout failed, user blocked:', e.message);
+    errEl.textContent = 'Checkout could not be completed. Please try again later.';
+  }
+}
+
+render();
+</script>
+</body>
+</html>
